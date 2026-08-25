@@ -1,0 +1,32 @@
+{
+  "name": "mysecureos-sdk",
+  "version": "0.1.0",
+  "description": "Trigger and track MySecureOS emergency activations from any React Native app.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "biome check .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "expo-secure-store": "*"
+  },
+  "peerDependenciesMeta": {
+    "expo-secure-store": { "optional": true }
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "typescript": "5.7.3",
+    "vitest": "3.2.7"
+  }
+}
