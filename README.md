@@ -62,6 +62,54 @@ await client.cancelEmergency(emergency.id)
   `expo-secure-store` module yourself; this package never imports it
   directly, so non-Expo React Native apps aren't forced to install it.
 
+### React hooks
+
+For React / React Native apps, `mysecureos-sdk/react` wraps the client in
+hooks so screens don't have to hand-roll loading/error state:
+
+```tsx
+import { useMySecureOSClient, useOtpLogin, useEmergency } from 'mysecureos-sdk/react'
+
+function PanicScreen() {
+  const { client, ready } = useMySecureOSClient({ baseUrl: 'https://api.mysecureos.co.za' })
+  const login = useOtpLogin(client)
+  const emergency = useEmergency(client)
+
+  if (!ready) return <Loading />
+
+  if (login.step === 'enterPhone') {
+    return <PhoneForm onSubmit={login.requestOtp} loading={login.loading} error={login.error} />
+  }
+  if (login.step === 'enterCode') {
+    return <CodeForm onSubmit={login.verifyOtp} loading={login.loading} error={login.error} />
+  }
+  if (login.step === 'needsProfile') {
+    return <ProfileForm onSubmit={login.registerUser} loading={login.loading} error={login.error} />
+  }
+
+  return (
+    <PanicButton
+      active={emergency.active}
+      loading={emergency.loading}
+      onPress={() => emergency.activate({ location })}
+      onCancel={() => emergency.cancel()}
+    />
+  )
+}
+```
+
+- `useMySecureOSClient(config)` — creates and hydrates the client once;
+  returns `{ client, session, ready }`.
+- `useOtpLogin(client)` — drives the phone → code → (optional profile) login
+  flow; returns `{ step, loading, error, phone, requestOtp, verifyOtp,
+  registerUser, reset }`.
+- `useEmergency(client)` — wraps activate/cancel as UI state; returns
+  `{ active, loading, error, activate, cancel }`.
+
+This subpath is the only place the package touches `react` — it's an
+optional peer dependency, so a plain Node/CLI consumer of the default export
+never needs `react` installed.
+
 ### Other methods
 
 - `listActiveEmergencies(orgId)` — active emergencies for an org.
