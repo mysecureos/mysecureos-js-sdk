@@ -2,7 +2,10 @@
 
 Trigger and track MySecureOS emergency activations from any React Native
 app. Auth is the same phone-number + OTP flow the MySecureOS mobile app
-uses — there's no separate partner API key to provision.
+uses. If your own app already authenticates its users itself and doesn't
+want them to also go through MySecureOS's login, see
+[Trusted partners](#trusted-partners-no-mysecureos-login) below — a
+per-org API key lets your server activate/clear emergencies directly.
 
 ## Install
 
@@ -109,6 +112,35 @@ function PanicScreen() {
 This subpath is the only place the package touches `react` — it's an
 optional peer dependency, so a plain Node/CLI consumer of the default export
 never needs `react` installed.
+
+### Trusted partners (no MySecureOS login)
+
+If your app already has its own login/OTP and you don't want your users to
+*also* sign in to MySecureOS, `MySecureOSPartnerClient` uses a per-org API
+key instead of a session — no `requestOtp`/`verifyOtp`, no `userId` (no
+MySecureOS user exists in this flow, only your org):
+
+```ts
+import { MySecureOSPartnerClient } from 'mysecureos-sdk'
+
+const partner = new MySecureOSPartnerClient({
+  baseUrl: 'https://api.mysecureos.co.za',
+  apiKey: process.env.MYSECUREOS_API_KEY!, // from your tenant's Settings > API Keys
+})
+
+// Raise a panic on behalf of a user your own system already authenticated.
+const emergency = await partner.activateEmergency({
+  location: { lat: -33.9249, lng: 18.4241 },
+})
+
+// Clearing requires a reason (unlike MySecureOSClient.cancelEmergency's optional one).
+await partner.clearEmergency(emergency.id, 'Confirmed safe by phone')
+```
+
+This is meant for **your server**, not a mobile/browser client — treat the
+API key like any other server secret (never ship it in an app bundle). A
+tenant admin generates/revokes keys from their MySecureOS dashboard's
+Settings > API Keys; the plaintext key is shown once, at creation.
 
 ### Other methods
 
