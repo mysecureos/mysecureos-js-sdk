@@ -1,11 +1,9 @@
 # mysecureos-sdk
 
-Trigger and track MySecureOS emergency activations from any React Native
-app. Auth is the same phone-number + OTP flow the MySecureOS mobile app
-uses. If your own app already authenticates its users itself and doesn't
-want them to also go through MySecureOS's login, see
-[Trusted partners](#trusted-partners-no-mysecureos-login) below — a
-per-org API key lets your server activate/clear emergencies directly.
+Trigger and track MySecureOS emergency activations from any app, using a
+per-org trusted-partner API key. Your own app authenticates its users
+itself; the key lets your server activate/clear emergencies directly — no
+MySecureOS session or user account involved on this end at all.
 
 ## Install
 
@@ -28,97 +26,12 @@ npm install mysecureos-sdk
 
 ## Usage
 
-```ts
-import { MySecureOSClient, createExpoSecureStoreAdapter } from 'mysecureos-sdk'
-import * as SecureStore from 'expo-secure-store'
-
-const client = new MySecureOSClient({
-  baseUrl: 'https://api.mysecureos.co.za',
-  // Optional: persist the session across app restarts (Expo apps only).
-  // Omit to use in-memory storage, which is lost when the process exits.
-  storage: createExpoSecureStoreAdapter(SecureStore),
-})
-
-// 1. Collect the end user's phone number and send them a code.
-await client.requestOtp('+27821234567')
-
-// 2. They enter the code; this logs them in and persists the session.
-await client.verifyOtp('+27821234567', '123456')
-
-// 3. Raise a panic. `orgId`/`userId` are inferred from the session if omitted.
-const emergency = await client.activateEmergency({
-  location: { lat: -33.9249, lng: 18.4241, accuracy: 12 },
-})
-
-// 4. Clear it once the user is safe.
-await client.cancelEmergency(emergency.id)
-```
-
-### Session persistence
-
-`storage` accepts anything implementing `SessionStorage`
-(`getItem`/`setItem`/`deleteItem`). Two adapters ship out of the box:
-
-- `createInMemoryStorage()` — the default; zero dependencies, but the
-  session doesn't survive a process restart.
-- `createExpoSecureStoreAdapter(SecureStore)` — pass in the
-  `expo-secure-store` module yourself; this package never imports it
-  directly, so non-Expo React Native apps aren't forced to install it.
-
-### React hooks
-
-For React / React Native apps, `mysecureos-sdk/react` wraps the client in
-hooks so screens don't have to hand-roll loading/error state:
-
-```tsx
-import { useMySecureOSClient, useOtpLogin, useEmergency } from 'mysecureos-sdk/react'
-
-function PanicScreen() {
-  const { client, ready } = useMySecureOSClient({ baseUrl: 'https://api.mysecureos.co.za' })
-  const login = useOtpLogin(client)
-  const emergency = useEmergency(client)
-
-  if (!ready) return <Loading />
-
-  if (login.step === 'enterPhone') {
-    return <PhoneForm onSubmit={login.requestOtp} loading={login.loading} error={login.error} />
-  }
-  if (login.step === 'enterCode') {
-    return <CodeForm onSubmit={login.verifyOtp} loading={login.loading} error={login.error} />
-  }
-  if (login.step === 'needsProfile') {
-    return <ProfileForm onSubmit={login.registerUser} loading={login.loading} error={login.error} />
-  }
-
-  return (
-    <PanicButton
-      active={emergency.active}
-      loading={emergency.loading}
-      onPress={() => emergency.activate({ location })}
-      onCancel={() => emergency.cancel()}
-    />
-  )
-}
-```
-
-- `useMySecureOSClient(config)` — creates and hydrates the client once;
-  returns `{ client, session, ready }`.
-- `useOtpLogin(client)` — drives the phone → code → (optional profile) login
-  flow; returns `{ step, loading, error, phone, requestOtp, verifyOtp,
-  registerUser, reset }`.
-- `useEmergency(client)` — wraps activate/cancel as UI state; returns
-  `{ active, loading, error, activate, cancel }`.
-
-This subpath is the only place the package touches `react` — it's an
-optional peer dependency, so a plain Node/CLI consumer of the default export
-never needs `react` installed.
-
-### Trusted partners (no MySecureOS login)
-
-If your app already has its own login/OTP and you don't want your users to
-*also* sign in to MySecureOS, `MySecureOSPartnerClient` uses a per-org API
-key instead of a session — no `requestOtp`/`verifyOtp`, no `userId` (no
-MySecureOS user exists in this flow, only your org):
+`MySecureOSPartnerClient` is meant for **your server**, not a
+mobile/browser client — treat the API key like any other server secret
+(never ship it in an app bundle; see
+[mysecureos-sdk-demo-mobile](../mysecureos-sdk-demo-mobile) for an example
+of a phone app that talks to its own small backend instead of holding a
+key itself).
 
 ```ts
 import { MySecureOSPartnerClient } from 'mysecureos-sdk'
@@ -133,25 +46,13 @@ const emergency = await partner.activateEmergency({
   location: { lat: -33.9249, lng: 18.4241 },
 })
 
-// Clearing requires a reason (unlike MySecureOSClient.cancelEmergency's optional one).
+// Clearing always requires a reason.
 await partner.clearEmergency(emergency.id, 'Confirmed safe by phone')
 ```
 
-This is meant for **your server**, not a mobile/browser client — treat the
-API key like any other server secret (never ship it in an app bundle). A
-tenant admin generates/revokes keys from their MySecureOS dashboard's
+A tenant admin generates/revokes keys from their MySecureOS dashboard's
 Settings > API Keys; the plaintext key is shown once, at creation.
-
-### Other methods
-
-- `listActiveEmergencies(orgId)` — active emergencies for an org.
-- `emergencyHistory({ orgId, from, to, q? })` — past emergencies in a date range.
-- `setActiveEmergencyId` / `getActiveEmergencyId` / `clearActiveEmergencyId` —
-  remember which emergency this device raised, so the UI can resume an
-  in-progress activation after an app restart (the server stays the
-  source of truth; use `listActiveEmergencies` to confirm it's still open).
-- `getSession()` / `loadSession()` / `logout()` — inspect or clear the
-  current session.
+`MySecureOSPartnerClient` exposes exactly these two methods — nothing else.
 
 ## Development
 
