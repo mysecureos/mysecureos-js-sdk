@@ -54,6 +54,31 @@ A tenant admin generates/revokes keys from their MySecureOS dashboard's
 Settings > API Keys; the plaintext key is shown once, at creation.
 `MySecureOSPartnerClient` exposes exactly these two methods — nothing else.
 
+### Device location
+
+`getDeviceLocation` wraps the permission-request + GPS-fix + timeout dance
+every mobile integration would otherwise hand-roll itself. It's duck-typed
+against `expo-location`'s shape — this package never imports `expo-location`
+directly, so pass the module in yourself:
+
+```ts
+import * as Location from 'expo-location'
+import { getDeviceLocation, MySecureOSPartnerClient } from 'mysecureos-sdk'
+
+// Runs on the phone, inside your app.
+const location = await getDeviceLocation(Location) // undefined if denied/timed out — never throws
+
+// Runs on your server — send `location` up from the phone however you like
+// (e.g. the same request that reaches your backend's own activate endpoint).
+await partner.activateEmergency({ location })
+```
+
+Never blocks activation on a bad fix: returns `undefined` (not a throw) if
+permission is denied, there's no fix within `timeoutMs` (default 8000), or
+anything else goes wrong — pass the result straight into
+`activateEmergency({ location })`, which already treats `location` as
+optional.
+
 ## Development
 
 This is a standalone project (npm, not the MySecureOS monorepo's pnpm
