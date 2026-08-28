@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./react-native": {
+      "types": "./dist/react-native/index.d.ts",
+      "default": "./dist/react-native/index.js"
     }
   },
   "files": ["dist"],
@@ -18,8 +22,25 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-native": ">=0.74"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-native": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "@types/react": "^19.2.17",
+    "@types/react-test-renderer": "^19.1.0",
+    "react": "^19.2.3",
+    "react-native": "^0.86.0",
+    "react-test-renderer": "^19.2.3",
     "typescript": "5.7.3",
     "vitest": "3.2.7"
   }
