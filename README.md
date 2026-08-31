@@ -29,7 +29,7 @@ The SDK is two layers. You always use the first; the second is optional.
 > **The API key is a server secret.** Never ship it in an app bundle or
 > browser JS — anyone can extract it. The app talks to *your* backend; only
 > your backend talks to MySecureOS. See
-> [mysecureos-sdk-demo-mobile](../mysecureos-sdk-demo-mobile) for a worked
+> [mysecureos-sdk-demo-mobile](https://github.com/mysecureos/mysecureos-sdk-demo) for a worked
 > example.
 
 ---
