@@ -60,7 +60,7 @@ describe('MySecureOSPartnerClient', () => {
     const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>
     fetchMock.mockResolvedValueOnce(tokenResponse('sdk-token-1'))
     fetchMock.mockResolvedValueOnce(emergencyResponse('pending'))
-    fetchMock.mockResolvedValueOnce(emergencyResponse('cancelled'))
+    fetchMock.mockResolvedValueOnce(emergencyResponse('resolved'))
     const client = new MySecureOSPartnerClient({ baseUrl: BASE_URL, apiKey: API_KEY })
 
     await client.activateEmergency()
@@ -101,12 +101,12 @@ describe('MySecureOSPartnerClient', () => {
   it('clearEmergency posts the reason to /partner/emergencies/:id/clear', async () => {
     const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>
     fetchMock.mockResolvedValueOnce(tokenResponse())
-    fetchMock.mockResolvedValueOnce(emergencyResponse('cancelled'))
+    fetchMock.mockResolvedValueOnce(emergencyResponse('resolved'))
     const client = new MySecureOSPartnerClient({ baseUrl: BASE_URL, apiKey: API_KEY })
 
     const emergency = await client.clearEmergency('em-1', 'Confirmed safe by phone')
 
-    expect(emergency.status).toBe('cancelled')
+    expect(emergency.status).toBe('resolved')
     const [url, init] = fetchMock.mock.calls[1]!
     expect(url).toBe(`${BASE_URL}/partner/emergencies/em-1/clear`)
     expect(JSON.parse(init.body)).toEqual({ reason: 'Confirmed safe by phone' })

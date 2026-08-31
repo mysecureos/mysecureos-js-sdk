@@ -23,3 +23,10 @@ export type { MiniMapProps, WebViewComponent } from './mini-map.js'
 export { panicTheme, resolveTheme } from './theme.js'
 export type { PanicTheme } from './theme.js'
 export type { PanicLocationModule } from './expo-location.js'
+// Re-exported for convenience so a UI consumer doesn't also import the root entry.
+export {
+  ACTIVE_STATUSES,
+  CLEARED_STATUSES,
+  isEmergencyCleared,
+} from '../types.js'
+export type { Emergency, EmergencySubject, LatLng } from '../types.js'

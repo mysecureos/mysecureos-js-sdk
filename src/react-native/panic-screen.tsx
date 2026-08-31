@@ -12,7 +12,7 @@ import {
   View,
   type ViewStyle,
 } from 'react-native'
-import type { Emergency, LatLng } from '../types.js'
+import { type Emergency, type LatLng, isEmergencyCleared } from '../types.js'
 import { ActivePanicCard } from './active-panic-card.js'
 import { MiniMap, type WebViewComponent } from './mini-map.js'
 import { type PanicTheme, resolveTheme } from './theme.js'
@@ -133,7 +133,7 @@ export function PanicScreen({
     )
   }
 
-  const cleared = active && active.status === 'cancelled'
+  const cleared = active && isEmergencyCleared(active)
   const name = subject?.name ?? brandName
 
   return (

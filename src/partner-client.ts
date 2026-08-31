@@ -111,7 +111,14 @@ export class MySecureOSPartnerClient {
     return this.request('/partner/emergencies', input)
   }
 
-  /** Clear an active emergency. Unlike MySecureOSClient.cancelEmergency, a reason is required. */
+  /**
+   * Clear an active emergency. Unlike MySecureOSClient.cancelEmergency a reason
+   * is required, and the emergency comes back `status: 'resolved'` (with the
+   * reason on its audit trail) — a partner clear is always a resolution, never
+   * a `cancelled` false alarm. A still-`pending` emergency is acknowledged
+   * first on the server. Clearing an already-resolved emergency returns it
+   * unchanged.
+   */
   async clearEmergency(id: string, reason: string): Promise<Emergency> {
     if (!id?.trim()) throw new Error('clearEmergency: id is required')
     if (!reason?.trim())

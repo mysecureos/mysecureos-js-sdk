@@ -57,7 +57,7 @@ describe('usePanic', () => {
 
   it('sends a non-empty reason to onClear, falling back to the default', async () => {
     const onActivate = vi.fn().mockResolvedValue(emergency('pending'))
-    const onClear = vi.fn().mockResolvedValue(emergency('cancelled'))
+    const onClear = vi.fn().mockResolvedValue(emergency('resolved'))
     const panic = renderPanic({ onActivate, onClear, defaultClearReason: 'Safe' })
 
     await act(async () => {
@@ -68,7 +68,7 @@ describe('usePanic', () => {
     })
 
     expect(onClear).toHaveBeenCalledWith('em-1', 'Safe')
-    expect(panic.current.active?.status).toBe('cancelled')
+    expect(panic.current.active?.status).toBe('resolved')
   })
 
   it('surfaces an activation failure as error without throwing', async () => {
@@ -143,7 +143,7 @@ describe('usePanic', () => {
 describe('panicBackend', () => {
   it('substitutes :id and sends { reason } on clear', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(emergency('cancelled')), {
+      new Response(JSON.stringify(emergency('resolved')), {
         status: 200,
         headers: { 'content-type': 'application/json' },
       }),

@@ -11,6 +11,18 @@ export interface LatLng {
 /** Active statuses (mirrors the API's ACTIVE bucket). */
 export const ACTIVE_STATUSES = ['pending', 'acknowledged', 'dispatched'] as const
 
+/**
+ * Terminal statuses — the emergency is over (mirrors the API's CLEARED bucket).
+ * A trusted-partner `clearEmergency` always lands on `resolved`; `cancelled` is
+ * reserved for a false alarm an operator stands down.
+ */
+export const CLEARED_STATUSES = ['resolved', 'cancelled'] as const
+
+/** True once an emergency has reached a terminal (`resolved` / `cancelled`) status. */
+export function isEmergencyCleared(emergency: Pick<Emergency, 'status'>): boolean {
+  return (CLEARED_STATUSES as readonly string[]).includes(emergency.status)
+}
+
 export interface EmergencySubject {
   name: string | null
   avatarUrl: string | null
