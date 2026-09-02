@@ -55,8 +55,8 @@ It ships ESM + TypeScript types and has **zero runtime dependencies**.
 ## Server: `MySecureOSPartnerClient`
 
 This runs on **your backend**. Get an API key from the MySecureOS dashboard —
-**Settings → API Keys → Generate new key** (the plaintext is shown once, at
-creation).
+**Company Settings → API Keys → Generate new key** (the plaintext is shown once,
+at creation).
 
 ```ts
 import { MySecureOSPartnerClient } from 'mysecureos-sdk'
@@ -82,13 +82,50 @@ console.log(cleared.status) // "resolved"
 | Call | Notes |
 | --- | --- |
 | `new MySecureOSPartnerClient({ baseUrl, apiKey })` | `baseUrl` must be HTTPS in production. `apiKey` is your `msk_live_…` key. |
-| `activateEmergency({ location?, deviceId? })` → `Promise<Emergency>` | `location` is `{ lat, lng, accuracy? }`; omit if you have no fix. `deviceId` is an optional paired-hardware UUID. Returns the created emergency (`status: 'pending'`). |
-| `clearEmergency(id, reason)` → `Promise<Emergency>` | Both required; empty `reason` throws before any request. Returns the emergency with `status: 'resolved'` (a partner clear is always a resolution, never a `cancelled` false alarm; a still-`pending` one is auto-acknowledged first). Clearing an already-resolved emergency returns it unchanged. |
+| `activateEmergency({ location?, deviceId? })` → `Promise<Emergency>` | `location` is `{ lat, lng, accuracy? }`; omit if you have no fix. `deviceId` is an optional paired-hardware UUID. Returns the created emergency (`status: 'pending'`). Throws `MySecureOSPaymentRequiredError` when the plan / quota is exhausted (see **Plans & quota**). |
+| `clearEmergency(id, reason)` → `Promise<Emergency>` | Both required; empty `reason` throws before any request. Returns the emergency with `status: 'resolved'` (a partner clear is always a resolution, never a `cancelled` false alarm; a still-`pending` one is auto-acknowledged first). Never quota-limited. Clearing an already-resolved emergency returns it unchanged. |
+| `getAccount()` → `Promise<PartnerAccount>` | `{ tier, status, auraAddon, auraBundled, quota, used, periodEnd }` — the org's SDK plan and this calendar month's activation usage. |
 
-Every method rejects with a plain `Error` whose `message` is the API's
-message (invalid/revoked key, rate limit, clearing another org's emergency,
-…). Wrap calls in `try/catch` — a MySecureOS outage should never crash your
-panic flow.
+### Errors
+
+Non-2xx responses reject with a typed error (both exported):
+
+| Error | When |
+| --- | --- |
+| `MySecureOSPaymentRequiredError` (`status: 402`) | The org's SDK plan is inactive / past due, or the monthly activation quota is used up. A billing/ops condition — alert, don't retry. Its `message` is deliberately generic ("temporarily unavailable, try again later") so it's safe to show an end user; call `getAccount()` for the real reason. |
+| `MySecureOSApiError` (`status`) | Everything else — invalid/revoked key, rate limit, clearing another org's emergency, a MySecureOS outage. `MySecureOSPaymentRequiredError` extends this. |
+
+```ts
+import { MySecureOSPaymentRequiredError } from 'mysecureos-sdk'
+
+try {
+  await partner.activateEmergency({ location })
+} catch (err) {
+  if (err instanceof MySecureOSPaymentRequiredError) {
+    // Safe to show the user err.message; alert ops with the details.
+    const { tier, used, quota } = await partner.getAccount()
+    alertOps(`SDK ${tier} quota ${used}/${quota} — activations blocked`)
+  } else {
+    logAndAlert(err) // never let a MySecureOS problem crash your panic flow
+  }
+}
+```
+
+### Plans & quota
+
+SDK access is a paid product, managed by the org's admin in the MySecureOS
+console under **Price plans**. Each tier (Free / Standard / Premium / Custom)
+allows a fixed number of `activateEmergency` calls per calendar month; `clear`
+calls are unlimited and never blocked. Over the limit, `activateEmergency`
+returns **HTTP 402** and the SDK throws `MySecureOSPaymentRequiredError` until
+the next month or an upgrade. MySecureOS emails the org's admins at 80% of
+quota and again when it's reached, so upgrading before the wall is the norm.
+Check headroom yourself with `getAccount()`:
+
+```ts
+const { tier, quota, used, periodEnd } = await partner.getAccount()
+if (used / quota > 0.9) warnOps(`SDK quota ${used}/${quota}, resets ${periodEnd}`)
+```
 
 ### Under the hood
 

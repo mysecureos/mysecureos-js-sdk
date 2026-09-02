@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { MySecureOSPartnerClient } from '../src/index.js'
+import {
+  MySecureOSApiError,
+  MySecureOSPartnerClient,
+  MySecureOSPaymentRequiredError,
+} from '../src/index.js'
 
 const BASE_URL = 'https://api.example.test'
 const API_KEY = 'msk_live_test000000000000000000000000'
@@ -133,5 +137,58 @@ describe('MySecureOSPartnerClient', () => {
 
     await expect(client.clearEmergency('em-1', '')).rejects.toThrow(/reason/)
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('throws MySecureOSPaymentRequiredError on a 402 (plan inactive / quota reached)', async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>
+    fetchMock.mockResolvedValueOnce(tokenResponse())
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ message: 'Monthly SDK activation quota reached (50).' }, 402),
+    )
+    const client = new MySecureOSPartnerClient({ baseUrl: BASE_URL, apiKey: API_KEY })
+
+    const err = await client.activateEmergency().catch((e) => e)
+    expect(err).toBeInstanceOf(MySecureOSPaymentRequiredError)
+    expect(err).toBeInstanceOf(MySecureOSApiError)
+    expect(err.status).toBe(402)
+    expect(err.message).toMatch(/quota reached/)
+  })
+
+  it('throws MySecureOSApiError with the status for other failures', async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>
+    fetchMock.mockResolvedValueOnce(tokenResponse())
+    fetchMock.mockResolvedValueOnce(jsonResponse({ message: 'Not your device' }, 403))
+    const client = new MySecureOSPartnerClient({ baseUrl: BASE_URL, apiKey: API_KEY })
+
+    const err = await client.activateEmergency().catch((e) => e)
+    expect(err).toBeInstanceOf(MySecureOSApiError)
+    expect(err).not.toBeInstanceOf(MySecureOSPaymentRequiredError)
+    expect(err.status).toBe(403)
+  })
+
+  it('getAccount GETs /partner/account and returns the plan + usage', async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>
+    fetchMock.mockResolvedValueOnce(tokenResponse('sdk-token-1'))
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        tier: 'standard',
+        status: 'active',
+        auraAddon: true,
+        auraBundled: false,
+        quota: 2000,
+        used: 137,
+        periodEnd: '2026-10-01T00:00:00.000Z',
+      }),
+    )
+    const client = new MySecureOSPartnerClient({ baseUrl: BASE_URL, apiKey: API_KEY })
+
+    const account = await client.getAccount()
+
+    expect(account).toMatchObject({ tier: 'standard', quota: 2000, used: 137 })
+    const [url, init] = fetchMock.mock.calls[1]!
+    expect(url).toBe(`${BASE_URL}/partner/account`)
+    expect(init.method).toBe('GET')
+    expect(init.body).toBeUndefined()
+    expect((init.headers as Record<string, string>).authorization).toBe('Bearer sdk-token-1')
   })
 })

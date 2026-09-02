@@ -41,3 +41,20 @@ export interface Emergency {
   subject?: EmergencySubject | null
   responder?: { kind: string; providerName: string | null; thirdParty: boolean } | null
 }
+
+/** The org's SDK plan + this calendar month's activation usage (`getAccount()`). */
+export interface PartnerAccount {
+  /** Flat monthly tier. `enterprise` = a bespoke, staff-set quota. */
+  tier: 'free' | 'standard' | 'premium' | 'enterprise'
+  status: 'active' | 'past_due' | 'cancelled'
+  /** AURA armed-response routing is enabled for this org's SDK emergencies. */
+  auraAddon: boolean
+  /** AURA is billed on the same recurring order as the plan. */
+  auraBundled: boolean
+  /** Activations allowed this calendar month. */
+  quota: number
+  /** Activations already used this calendar month (`clear` calls don't count). */
+  used: number
+  /** ISO timestamp when the quota window resets (first of next month, UTC). */
+  periodEnd: string
+}

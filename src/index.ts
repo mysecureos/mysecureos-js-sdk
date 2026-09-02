@@ -3,6 +3,7 @@ export {
   type PartnerClientConfig,
   type PartnerActivateInput,
 } from './partner-client.js'
+export { MySecureOSApiError, MySecureOSPaymentRequiredError } from './errors.js'
 export {
   getDeviceLocation,
   type DeviceLocationModule,

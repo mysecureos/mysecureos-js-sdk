@@ -1,3 +1,4 @@
+import { MySecureOSApiError, MySecureOSPaymentRequiredError } from '../errors.js'
 import type { Emergency, LatLng } from '../types.js'
 
 export interface PanicBackendConfig {
@@ -23,8 +24,13 @@ export interface PanicBackendConfig {
 async function parse(res: Response): Promise<Emergency> {
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as { message?: string | string[] } | null
-    const msg = Array.isArray(body?.message) ? body.message[0] : body?.message
-    throw new Error(msg ?? `Request failed (${res.status})`)
+    const msg =
+      (Array.isArray(body?.message) ? body.message[0] : body?.message) ??
+      `Request failed (${res.status})`
+    // Surfaced when your server relays MySecureOS's 402 (plan / quota) through.
+    throw res.status === 402
+      ? new MySecureOSPaymentRequiredError(msg)
+      : new MySecureOSApiError(msg, res.status)
   }
   return res.json() as Promise<Emergency>
 }

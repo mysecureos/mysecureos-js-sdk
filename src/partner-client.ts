@@ -1,4 +1,5 @@
-import type { Emergency, LatLng } from './types.js'
+import { MySecureOSApiError, MySecureOSPaymentRequiredError } from './errors.js'
+import type { Emergency, LatLng, PartnerAccount } from './types.js'
 
 export interface PartnerClientConfig {
   /** Base URL of the MySecureOS API, e.g. "https://api.mysecureos.co.za". */
@@ -68,7 +69,10 @@ export class MySecureOSPartnerClient {
     if (!res.ok) {
       const body = (await res.json().catch(() => null)) as { message?: string | string[] } | null
       const msg = Array.isArray(body?.message) ? body.message[0] : body?.message
-      throw new Error(msg ?? 'Could not obtain an SDK token — check your API key')
+      throw new MySecureOSApiError(
+        msg ?? 'Could not obtain an SDK token — check your API key',
+        res.status,
+      )
     }
     const { token, expiresIn } = (await res.json()) as { token: string; expiresIn: number }
     this.sdkToken = token
@@ -76,15 +80,15 @@ export class MySecureOSPartnerClient {
     return token
   }
 
-  private async request(path: string, body: unknown): Promise<Emergency> {
+  private async request<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
     const attempt = async (bearer: string) =>
       fetch(`${this.baseUrl}${path}`, {
-        method: 'POST',
+        method,
         headers: {
-          'content-type': 'application/json',
           authorization: `Bearer ${bearer}`,
+          ...(body === undefined ? {} : { 'content-type': 'application/json' }),
         },
-        body: JSON.stringify(body),
+        body: body === undefined ? undefined : JSON.stringify(body),
       })
 
     let res = await attempt(await this.ensureSdkToken())
@@ -98,17 +102,33 @@ export class MySecureOSPartnerClient {
       const responseBody = (await res.json().catch(() => null)) as {
         message?: string | string[]
       } | null
-      const msg = Array.isArray(responseBody?.message)
-        ? responseBody.message[0]
-        : responseBody?.message
-      throw new Error(msg ?? 'Request failed')
+      const msg =
+        (Array.isArray(responseBody?.message) ? responseBody.message[0] : responseBody?.message) ??
+        'Request failed'
+      throw res.status === 402
+        ? new MySecureOSPaymentRequiredError(msg)
+        : new MySecureOSApiError(msg, res.status)
     }
-    return res.json() as Promise<Emergency>
+    return res.json() as Promise<T>
   }
 
-  /** Raise a panic on behalf of a user your own system has already authenticated. */
+  /**
+   * Raise a panic on behalf of a user your own system has already authenticated.
+   *
+   * Throws `MySecureOSPaymentRequiredError` (HTTP 402) when the org's SDK plan
+   * is inactive or its monthly activation quota is used up — alert billing/ops
+   * and don't retry.
+   */
   activateEmergency(input: PartnerActivateInput = {}): Promise<Emergency> {
-    return this.request('/partner/emergencies', input)
+    return this.request('POST', '/partner/emergencies', input)
+  }
+
+  /**
+   * The org's SDK plan and this calendar month's activation usage — use it to
+   * show usage in your own dashboard, or warn before you hit the 402 wall.
+   */
+  getAccount(): Promise<PartnerAccount> {
+    return this.request('GET', '/partner/account')
   }
 
   /**
@@ -123,6 +143,6 @@ export class MySecureOSPartnerClient {
     if (!id?.trim()) throw new Error('clearEmergency: id is required')
     if (!reason?.trim())
       throw new Error('clearEmergency: a reason is required to clear an emergency')
-    return this.request(`/partner/emergencies/${id}/clear`, { reason })
+    return this.request('POST', `/partner/emergencies/${id}/clear`, { reason })
   }
 }
