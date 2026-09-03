@@ -40,10 +40,10 @@ Not yet on the npm registry (see [Publishing](#publishing)). Until then:
 
 ```bash
 # From a local checkout
-npm install ../mysecureos-sdk
+npm install ../mysecureos-js-sdk
 
 # Or from a git remote
-npm install git+https://github.com/mysecureos/mysecureos-sdk.git
+npm install git+https://github.com/mysecureos/mysecureos-js-sdk.git
 ```
 
 Once published: `npm install mysecureos-js-sdk`.
@@ -366,13 +366,13 @@ loop; run `npm run build` before consuming it from a real app (it reads
 
 ```bash
 npm run build
-npm link                      # inside mysecureos-sdk
+npm link                      # inside mysecureos-js-sdk
 cd /path/to/consumer-app
 npm link mysecureos-js-sdk
 ```
 
 Re-run `npm run build` after each change. For a **React Native** consumer,
-prefer a pack-install (`npm install ../mysecureos-sdk` with
+prefer a pack-install (`npm install ../mysecureos-js-sdk` with
 `install-links=true`) over `npm link` — a symlink makes Metro resolve the
 SDK's `react` against *this* repo's copy, causing an "Invalid hook call".
 
