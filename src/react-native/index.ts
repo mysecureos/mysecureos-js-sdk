@@ -1,5 +1,5 @@
 // Optional React Native UI for the trusted-partner flow. Imported only via the
-// "mysecureos-sdk/react-native" subpath, so plain Node/server consumers of the
+// "mysecureos-js-sdk/react-native" subpath, so plain Node/server consumers of the
 // default export never need `react` / `react-native` resolvable.
 //
 // Nothing here holds the API key. The components call `onActivate` / `onClear`,

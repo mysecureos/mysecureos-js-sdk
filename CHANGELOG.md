@@ -26,4 +26,4 @@
 
 - Initial release: `MySecureOSPartnerClient` (activate / clear emergencies with a
   trusted-partner API key, exchanged for a short-lived SDK token), plus the
-  opt-in `mysecureos-sdk/react-native` panic UI.
+  opt-in `mysecureos-js-sdk/react-native` panic UI.

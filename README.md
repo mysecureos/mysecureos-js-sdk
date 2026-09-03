@@ -1,4 +1,4 @@
-# mysecureos-sdk
+# mysecureos-js-sdk
 
 Trigger and track MySecureOS emergency activations from your own app, using a
 per-org **trusted-partner API key**. Your app authenticates its own users; the
@@ -15,7 +15,7 @@ The SDK is two layers. You always use the first; the second is optional.
 ┌─────────────────────────┐   your auth    ┌──────────────────────┐   API key    ┌───────────────┐
 │  your mobile / web app  │ ─────────────▶ │   your backend       │ ───────────▶ │  MySecureOS   │
 │                         │                │                      │              │  API          │
-│  mysecureos-sdk/        │                │  mysecureos-sdk      │              │               │
+│  mysecureos-js-sdk/     │                │  mysecureos-js-sdk   │              │               │
 │  react-native (opt-in)  │                │  MySecureOSPartner…  │              │               │
 └─────────────────────────┘                └──────────────────────┘              └───────────────┘
          UI + GPS                              holds the API key
@@ -23,8 +23,8 @@ The SDK is two layers. You always use the first; the second is optional.
 
 | Layer | Import | Runs | Purpose |
 | --- | --- | --- | --- |
-| **Partner client** | `mysecureos-sdk` | your server (Node 18+, Bun, Deno, serverless) | Holds the API key. Activates / clears emergencies. Required. |
-| **Panic UI** | `mysecureos-sdk/react-native` | your app (React Native / Expo) | Drop-in SOS screen, or just its state. Optional and opt-in. |
+| **Partner client** | `mysecureos-js-sdk` | your server (Node 18+, Bun, Deno, serverless) | Holds the API key. Activates / clears emergencies. Required. |
+| **Panic UI** | `mysecureos-js-sdk/react-native` | your app (React Native / Expo) | Drop-in SOS screen, or just its state. Optional and opt-in. |
 
 > **The API key is a server secret.** Never ship it in an app bundle or
 > browser JS — anyone can extract it. The app talks to *your* backend; only
@@ -46,7 +46,7 @@ npm install ../mysecureos-sdk
 npm install git+https://github.com/mysecureos/mysecureos-sdk.git
 ```
 
-Once published: `npm install mysecureos-sdk`.
+Once published: `npm install mysecureos-js-sdk`.
 
 It ships ESM + TypeScript types and has **zero runtime dependencies**.
 
@@ -59,7 +59,7 @@ This runs on **your backend**. Get an API key from the MySecureOS dashboard —
 at creation).
 
 ```ts
-import { MySecureOSPartnerClient } from 'mysecureos-sdk'
+import { MySecureOSPartnerClient } from 'mysecureos-js-sdk'
 
 const partner = new MySecureOSPartnerClient({
   baseUrl: 'https://api.mysecureos.co.za',
@@ -96,7 +96,7 @@ Non-2xx responses reject with a typed error (both exported):
 | `MySecureOSApiError` (`status`) | Everything else — invalid/revoked key, rate limit, clearing another org's emergency, a MySecureOS outage. `MySecureOSPaymentRequiredError` extends this. |
 
 ```ts
-import { MySecureOSPaymentRequiredError } from 'mysecureos-sdk'
+import { MySecureOSPaymentRequiredError } from 'mysecureos-js-sdk'
 
 try {
   await partner.activateEmergency({ location })
@@ -146,7 +146,7 @@ the module in):
 
 ```ts
 import * as Location from 'expo-location'
-import { getDeviceLocation } from 'mysecureos-sdk'
+import { getDeviceLocation } from 'mysecureos-js-sdk'
 
 const location = await getDeviceLocation(Location) // LatLng | undefined
 // send `location` to your backend, which calls partner.activateEmergency({ location })
@@ -161,9 +161,9 @@ passed through to `getCurrentPositionAsync` (e.g. `Location.Accuracy.High`).
 
 ---
 
-## In the app: the panic UI (`mysecureos-sdk/react-native`)
+## In the app: the panic UI (`mysecureos-js-sdk/react-native`)
 
-**Optional and opt-in.** A separate subpath, so `mysecureos-sdk` on its own
+**Optional and opt-in.** A separate subpath, so `mysecureos-js-sdk` on its own
 never pulls in React. Use as much or as little as you want:
 
 1. **Turnkey** — `<PanicScreen>`, the real MySecureOS SOS screen.
@@ -172,7 +172,7 @@ never pulls in React. Use as much or as little as you want:
 4. **None** — ignore this subpath entirely and call your backend by hand.
 
 ```bash
-npm install mysecureos-sdk expo-location
+npm install mysecureos-js-sdk expo-location
 npm install react-native-webview   # optional — only for the mini-map
 ```
 
@@ -190,7 +190,7 @@ it renders in the MySecureOS app theme; pass `theme` to re-skin it (see
 ```tsx
 import * as Location from 'expo-location'
 import { WebView } from 'react-native-webview'
-import { PanicScreen } from 'mysecureos-sdk/react-native'
+import { PanicScreen } from 'mysecureos-js-sdk/react-native'
 
 export default function Sos() {
   return (
@@ -275,7 +275,7 @@ every key is a plain colour string:
 ```
 
 `panicTheme` (the defaults object) and `resolveTheme(override?)` (the merge
-helper) are both exported from `mysecureos-sdk/react-native` if you want to
+helper) are both exported from `mysecureos-js-sdk/react-native` if you want to
 build a theme from the MySecureOS base yourself.
 
 **Swap pieces** with slots — the flow, GPS and error handling stay:
@@ -303,8 +303,8 @@ The hook behind `<PanicScreen>`. Manages the GPS watch and the
 activate / clear lifecycle; you render everything.
 
 ```tsx
-import { usePanic } from 'mysecureos-sdk/react-native'
-import { isEmergencyCleared } from 'mysecureos-sdk'
+import { usePanic } from 'mysecureos-js-sdk/react-native'
+import { isEmergencyCleared } from 'mysecureos-js-sdk'
 
 function MyOwnSos() {
   const { active, fix, address, sending, clearing, error, activate, clear, dismiss } =
@@ -339,7 +339,7 @@ handlers nor `backend` throws.)
 
 ### 4. None
 
-Skip `mysecureos-sdk/react-native` entirely, build your own screen, and POST
+Skip `mysecureos-js-sdk/react-native` entirely, build your own screen, and POST
 to your backend by hand. The headless `MySecureOSPartnerClient` on the server
 is the whole contract — nothing here is required.
 
@@ -368,7 +368,7 @@ loop; run `npm run build` before consuming it from a real app (it reads
 npm run build
 npm link                      # inside mysecureos-sdk
 cd /path/to/consumer-app
-npm link mysecureos-sdk
+npm link mysecureos-js-sdk
 ```
 
 Re-run `npm run build` after each change. For a **React Native** consumer,
@@ -378,7 +378,7 @@ SDK's `react` against *this* repo's copy, causing an "Invalid hook call".
 
 ## Publishing
 
-1. Confirm the name: https://www.npmjs.com/package/mysecureos-sdk (or use a
+1. Confirm the name: https://www.npmjs.com/package/mysecureos-js-sdk (or use a
    scoped name like `@mysecureos/sdk` — changes `package.json` `"name"` and
    needs `--access public`).
 2. Bump `"version"` (semver).
@@ -386,5 +386,5 @@ SDK's `react` against *this* repo's copy, causing an "Invalid hook call".
 4. `npm login` (once per machine).
 5. `npm publish` (`--access public` only for a scoped name).
 
-Consumers then `npm install mysecureos-sdk` (or `pnpm add` / `yarn add`), and
-the UI is at `mysecureos-sdk/react-native`.
+Consumers then `npm install mysecureos-js-sdk` (or `pnpm add` / `yarn add`), and
+the UI is at `mysecureos-js-sdk/react-native`.
