@@ -411,22 +411,31 @@ lint, typecheck, tests and build on Node 20 and 22.
 
 ## Releasing
 
-_For maintainers._ Releases are published to npm by the
-[Publish workflow](.github/workflows/publish.yml) when a GitHub Release is
-published.
+_For maintainers._ Releases are published to npm from a maintainer's machine.
+The npm account uses a security key for 2FA.
 
-1. Add the changes under a new version heading in [CHANGELOG.md](CHANGELOG.md).
-2. Bump the version and push the tag:
+1. Add the changes under a new version heading in [CHANGELOG.md](CHANGELOG.md)
+   and commit them. `npm version` needs a clean working tree.
+2. Bump the version. This creates a release commit and a `vX.Y.Z` tag:
    ```bash
    npm version patch   # or minor / major
+   ```
+3. Publish:
+   ```bash
+   npm login                     # once per machine; approve with your security key
+   npm publish --access public   # approve with your security key when prompted
+   ```
+   The `prepublishOnly` script runs lint, typecheck, tests and the build first,
+   so a broken build can't be published. Run `npm publish` only once. If it
+   reports _"cannot publish over the previously published version"_, the first
+   attempt already succeeded. Check with `npm view mysecureos-js-sdk version`.
+4. Push the release commit and tag:
+   ```bash
    git push --follow-tags
    ```
-3. On GitHub, create a **Release** from the new tag (for example `v0.2.1`) and
-   publish it.
-4. The workflow verifies, builds and publishes the package with provenance. It
-   fails if the tag doesn't match `package.json`'s `version`.
-5. If npm stages the version for review, a maintainer approves it with 2FA, either
-   on npmjs.com or with `npm stage approve <stage-id>` (npm 11.15 or newer).
+
+If npm stages the version for review instead of publishing it, approve it with
+`npm stage list`, then `npm stage approve <stage-id>` (npm 11.15 or newer).
 
 Only `dist/` is published (see `"files"` in `package.json`).
 
