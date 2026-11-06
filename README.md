@@ -1,9 +1,32 @@
 # mysecureos-js-sdk
 
-Trigger and track MySecureOS emergency activations from your own app, using a
-per-org **trusted-partner API key**. Your app authenticates its own users; the
-key lets *your server* activate and clear emergencies on their behalf — no
-MySecureOS login, session, or user account on your side at all.
+[![npm version](https://img.shields.io/npm/v/mysecureos-js-sdk.svg)](https://www.npmjs.com/package/mysecureos-js-sdk)
+[![CI](https://github.com/mysecureos/mysecureos-js-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/mysecureos/mysecureos-js-sdk/actions/workflows/ci.yml)
+[![TypeScript](https://img.shields.io/badge/types-included-blue.svg)](https://www.npmjs.com/package/mysecureos-js-sdk)
+[![zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](https://www.npmjs.com/package/mysecureos-js-sdk?activeTab=dependencies)
+
+The official JavaScript / TypeScript SDK for **MySecureOS**. It lets you trigger
+and track emergency activations from your own product.
+
+Authenticate with a per-organisation **trusted-partner API key**. Your app signs
+in its own users, and your server uses the key to activate and clear emergencies
+for them. Your users don't need a MySecureOS login, session or account.
+
+```bash
+npm install mysecureos-js-sdk
+```
+
+## Contents
+
+- [How it fits together](#how-it-fits-together)
+- [Install](#install)
+- [Server: `MySecureOSPartnerClient`](#server-mysecureospartnerclient)
+- [In the app: capturing a location](#in-the-app-capturing-a-location)
+- [In the app: the panic UI](#in-the-app-the-panic-ui-mysecureos-js-sdkreact-native)
+- [Development](#development)
+- [Releasing](#releasing)
+- [Changelog](#changelog)
+- [Support](#support)
 
 ---
 
@@ -36,19 +59,25 @@ The SDK is two layers. You always use the first; the second is optional.
 
 ## Install
 
-Not yet on the npm registry (see [Publishing](#publishing)). Until then:
-
 ```bash
-# From a local checkout
-npm install ../mysecureos-js-sdk
-
-# Or from a git remote
-npm install git+https://github.com/mysecureos/mysecureos-js-sdk.git
+npm install mysecureos-js-sdk
+# or
+pnpm add mysecureos-js-sdk
+# or
+yarn add mysecureos-js-sdk
 ```
 
-Once published: `npm install mysecureos-js-sdk`.
+- **Format:** ES modules, with TypeScript declarations included.
+- **Dependencies:** none at runtime.
+- **Entry points:**
+  - `mysecureos-js-sdk`: the server client and helpers.
+  - `mysecureos-js-sdk/react-native`: the optional panic UI.
+- **Runtime:** the server client runs on Node 18+, Bun, Deno and serverless
+  platforms. It needs nothing beyond the platform's built-in `fetch`.
 
-It ships ESM + TypeScript types and has **zero runtime dependencies**.
+Every release is published from GitHub Actions with
+[npm provenance](https://docs.npmjs.com/generating-provenance-statements), so you
+can trace each version back to the commit and workflow run that built it.
 
 ---
 
@@ -181,8 +210,8 @@ npm install react-native-webview   # optional — only for the mini-map
 
 ### 1. Turnkey — `<PanicScreen>`
 
-Mirrors `apps/mobile/app/(tabs)/sos.tsx`: identity header, always-on GPS fix +
-reverse-geocoded address, the round SOS button, a "Located" card, an optional
+The same SOS experience as the MySecureOS mobile app: an identity header, an
+always-on GPS fix with the reverse-geocoded address, the round SOS button, a "Located" card, an optional
 mini-map, and the active-emergency card with confirm-to-clear. Out of the box
 it renders in the MySecureOS app theme; pass `theme` to re-skin it (see
 [Customize](#2-customize--restyle-or-swap-pieces)).
@@ -247,7 +276,7 @@ Want your own calls instead of `backend`:
 Keep `<PanicScreen>`'s state machine; change only what you want.
 
 **Recolour** with `theme`. By default `<PanicScreen>` renders in the real
-MySecureOS app palette (`panicTheme`, mirrored from `apps/mobile`), so a
+MySecureOS app palette (`panicTheme`), so a
 partner who passes no `theme` gets the genuine MySecureOS look, not a generic
 RN starter. Pass a **partial** override and it's merged over those defaults —
 every key is a plain colour string:
@@ -347,10 +376,11 @@ is the whole contract — nothing here is required.
 
 ## Development
 
-Standalone npm project (not the MySecureOS monorepo's pnpm workspace) — its
-own `node_modules`, no dependency on anything outside this directory.
+To contribute to the SDK itself:
 
 ```bash
+git clone https://github.com/mysecureos/mysecureos-js-sdk.git
+cd mysecureos-js-sdk
 npm install         # first time only
 npm run typecheck   # tsc, no emit
 npm run lint        # biome check .
@@ -376,15 +406,40 @@ prefer a pack-install (`npm install ../mysecureos-js-sdk` with
 `install-links=true`) over `npm link` — a symlink makes Metro resolve the
 SDK's `react` against *this* repo's copy, causing an "Invalid hook call".
 
-## Publishing
+Every pull request and every push to `main` triggers the CI workflow. It runs
+lint, typecheck, tests and build on Node 20 and 22.
 
-1. Confirm the name: https://www.npmjs.com/package/mysecureos-js-sdk (or use a
-   scoped name like `@mysecureos/sdk` — changes `package.json` `"name"` and
-   needs `--access public`).
-2. Bump `"version"` (semver).
-3. `npm run build` — publishing ships `dist/` (see `"files"`), not `src/`.
-4. `npm login` (once per machine).
-5. `npm publish` (`--access public` only for a scoped name).
+## Releasing
 
-Consumers then `npm install mysecureos-js-sdk` (or `pnpm add` / `yarn add`), and
-the UI is at `mysecureos-js-sdk/react-native`.
+_For maintainers._ Releases are published to npm by the
+[Publish workflow](.github/workflows/publish.yml) when a GitHub Release is
+published.
+
+1. Add the changes under a new version heading in [CHANGELOG.md](CHANGELOG.md).
+2. Bump the version and push the tag:
+   ```bash
+   npm version patch   # or minor / major
+   git push --follow-tags
+   ```
+3. On GitHub, create a **Release** from the new tag (for example `v0.2.1`) and
+   publish it.
+4. The workflow verifies, builds and publishes the package with provenance. It
+   fails if the tag doesn't match `package.json`'s `version`.
+5. If npm stages the version for review, a maintainer approves it with 2FA, either
+   on npmjs.com or with `npm stage approve <stage-id>` (npm 11.15 or newer).
+
+Only `dist/` is published (see `"files"` in `package.json`).
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for release notes, and
+[GitHub Releases](https://github.com/mysecureos/mysecureos-js-sdk/releases) for
+published versions.
+
+## Support
+
+- **Bugs and feature requests:** [open an issue](https://github.com/mysecureos/mysecureos-js-sdk/issues).
+- **API keys, plans and billing:** contact your MySecureOS account manager, or
+  manage them in the MySecureOS dashboard.
+- **Security issues:** don't open a public issue. Report them privately to the
+  MySecureOS team.
