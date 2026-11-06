@@ -1,6 +1,6 @@
 {
   "name": "mysecureos-js-sdk",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Trigger and track MySecureOS emergency activations using a trusted-partner API key.",
   "repository": {
     "type": "git",
@@ -25,6 +25,7 @@
     "lint": "biome check .",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
+    "version": "biome format --write package.json && git add package.json",
     "prepublishOnly": "npm run lint && npm run typecheck && npm test && npm run build"
   },
   "peerDependencies": {
