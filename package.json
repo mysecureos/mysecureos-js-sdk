@@ -1,6 +1,6 @@
 {
   "name": "mysecureos-js-sdk",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Trigger and track MySecureOS emergency activations using a trusted-partner API key.",
   "repository": {
     "type": "git",
