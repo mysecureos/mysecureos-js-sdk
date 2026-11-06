@@ -27,6 +27,7 @@ npm install mysecureos-js-sdk
 - [Releasing](#releasing)
 - [Changelog](#changelog)
 - [Support](#support)
+- [License](#license)
 
 ---
 
@@ -411,7 +412,9 @@ lint, typecheck, tests and build on Node 20 and 22.
 
 ## Releasing
 
-_For maintainers._ Releases are published to npm from a maintainer's machine.
+_For maintainers._ The full step-by-step guide, including troubleshooting, is in
+[PUBLISHING.md](PUBLISHING.md). In short: releases are published to npm from a
+maintainer's machine.
 The npm account uses a security key for 2FA.
 
 1. Add the changes under a new version heading in [CHANGELOG.md](CHANGELOG.md)
@@ -452,3 +455,11 @@ published versions.
   manage them in the MySecureOS dashboard.
 - **Security issues:** don't open a public issue. Report them privately to the
   MySecureOS team.
+
+## License
+
+Copyright © 2026 MySecureOS. All rights reserved.
+
+This SDK is proprietary software. You may use it, without modification, only to
+integrate your applications with MySecureOS services, under your agreement with
+MySecureOS. See [LICENSE](LICENSE) for the full terms.
